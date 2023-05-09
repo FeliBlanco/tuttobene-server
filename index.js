@@ -3,6 +3,7 @@ const mysql = require('mysql')
 const cors = require('cors')
 const bodyParser = require('body-parser')
 const fileUpload = require('express-fileupload');
+const path = require('path');
 
 
 const app = express()
@@ -101,7 +102,7 @@ app.post('/api/products/delete', (req, res) => {
     })
 })
 
-app.post('/api/products/add', (req, res) => {
+app.post('/api/products/add', async (req, res) => {
     const { 
         nombre,
         precio,
@@ -113,6 +114,9 @@ app.post('/api/products/add', (req, res) => {
 
     console.log(req.body)
     console.log(req.files)
+
+    if(!req.files) return res.sendStatus(500)
+    const img = req.files.imgs
 
 
     if(!nombre) return res.sendStatus(500)
@@ -128,27 +132,31 @@ app.post('/api/products/add', (req, res) => {
 
     con.query(`
         INSERT INTO productos (nombre, precio, categoria, imagen, descripcion, formato_de_venta) VALUES (?, ?, ?, ?, ?, ?)
-    `, [nombre, precio, categoria, imagen, descripcion, formato], (err, result) => {
+    `, [nombre, precio, categoria, imagen, descripcion, formato], async (err, result) => {
         if(err) return res.sendStatus(500)
 
         const productId = result.insertId
 
         for(let i = 0; i < variaciones.length; i++) {
-            con.query(`INSERT INTO variaciones (nombre, productoid) VALUES (?, ?)`, [variaciones[i].nombre, productId],(err2, result2) => {
+            con.query(`INSERT INTO variaciones (nombre, productoid) VALUES (?, ?)`, [variaciones[i].nombre, productId], async (err2, result2) => {
                 if(err2) return res.sendStatus(500)
 
                 const variacionId = result2.insertId
 
                 for(let j = 0; j < variaciones[i].length; j++) {
-                    con.query(`INSERT INTO variaciones_value (valor, variacionid) VALUES (?, ?)`, [ variaciones[i].options[j].value, variacionId ], (err3, result3) => {
+                    con.query(`INSERT INTO variaciones_value (valor, variacionid) VALUES (?, ?)`, [ variaciones[i].options[j].value, variacionId ], async (err3, result3) => {
                         if(err3) return res.sendStatus(500)
                     })
                 }
 
             })
         }
-        res.send({code: 1})
+
+        img.mv(`${__dirname}/imagenes/productos/dsada.jpg`, (err) => {
+            if(err) return console.log(err)
+        })
     })
+    //res.send({code: 1})
 })
 
 

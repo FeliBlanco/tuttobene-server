@@ -127,7 +127,7 @@ app.post('/api/products/add', async (req, res) => {
     if(!variaciones) return res.sendStatus(500)
 
 
-    let imagen = ""
+    let imagen = "nombreimagen.jpg"//generar nombre random con una funcion
 
 
     con.query(`
@@ -152,7 +152,7 @@ app.post('/api/products/add', async (req, res) => {
             })
         }
 
-        img.mv(`${__dirname}/imagenes/productos/dsada.jpg`, (err) => {
+        img.mv(`${__dirname}/imagenes/productos/${imagen}`, (err) => {
             if(err) return console.log(err)
         })
     })

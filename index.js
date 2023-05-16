@@ -810,12 +810,12 @@ app.get('/api/categories/getAllWithProducts', async (req, res) => {
 })
 
 app.post('/api/categories/delete', async (req, res) => {
-
     const { id } = req.body;
     if(!id) return res.status(500).send({err: 'id is required'})
+    console.log("id: " + id)
 
     const [err, result] = await mysqlQuery("DELETE FROM categorias WHERE id = ?", [id])
-    if(err) return res.status(500).send({err: 'MySQL error'})
+    /* if(err) return res.status(500).send({err: 'MySQL error'}) */
     res.send({code: 1})
 })
 
@@ -836,8 +836,7 @@ app.post('/api/categories/edit', async (req, res) => {
     if(!nombre) return res.status(500).send({err: 'nombre is required'})
     if(!id) return res.status(500).send({err: 'id is required'})
 
-    await mysqlQuery("UPDATE categorias set nombre = ? WHERE id = ? ", [nombre, id])
-    if(err) return res.status(500).send({err: 'MySQL error'})
+    const sql = await mysqlQuery("UPDATE categorias set nombre = ? WHERE id = ? ", [nombre, id])
     res.send({code: 1})
 })
 

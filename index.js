@@ -93,6 +93,192 @@ app.post('/api/user/get', async (req, res) => {
 
 /* PEDIDOS */
 
+app.get('/api/admin/pedidos-cerrados', async (req, res) => {
+
+    let data = []
+    const [err, result] = await mysqlQuery(`
+        SELECT 
+                P.*,
+                PP.*,
+                VVD.valor AS VariacionValueNombre,
+                VD.nombre AS VariacionNombre,
+                PV.variacionid AS VariacionId,
+                PV.valor AS VariacionValor,
+                PS.nombre AS nombreProducto,
+                PS.precio AS precioProducto,
+                PS.formato_de_venta AS formatoProducto,
+                P.id AS idPedido,
+                PP.id AS PProductoId,
+                PV.id AS PVarId
+            FROM pedidos P
+            LEFT JOIN pedidos_productos PP ON PP.pedidoid = P.id
+            LEFT JOIN productos PS ON PS.id = PP.productoid
+            LEFT JOIN pedidos_variaciones PV ON PV.pedidoid = P.id AND PV.pedidoproducto = PP.id
+            LEFT JOIN variaciones VD ON VD.id = PV.VariacionId
+            LEFT JOIN variaciones_value VVD ON VVD.id = PV.valor
+            WHERE P.enviado = 1
+            ORDER BY P.id DESC
+        `)
+    if(err) return res.status(500).send({err: 'MySQL error.'})
+    for(let i = 0; i < result.length; i++) {
+
+        if(!data[ result[i].idPedido ]) {
+            data[ result[i].idPedido ] = {
+                telefono: result[i].telefono,
+                nombre: result[i].nombre,
+                id: result[i].idPedido,
+                direccion: result[i].direccion,
+                ciudad: result[i].ciudad,
+                pago: result[i].pago,
+                pagado: result[i].pagado,
+                enviar: result[i].enviar,
+                enviado: result[i].enviado,
+                fecha: result[i].fecha,
+                productos: []
+            }
+        }
+
+        if(!data[ result[i].idPedido ].productos[ result[i].PProductoId ]) {
+            data[ result[i].idPedido ].productos[ result[i].PProductoId ] = {
+                cantidad: result[i].cantidad,
+                productoid: result[i].productoid,
+                nombre: result[i].nombreProducto,
+                precio: result[i].precioProducto,
+                formato: result[i].formatoProducto,
+                variaciones: []
+            }
+        }
+
+        if(!data[ result[i].idPedido ].productos[ result[i].PProductoId ].variaciones[ result[i].VariacionId ]) {
+            data[ result[i].idPedido ].productos[ result[i].PProductoId ].variaciones[ result[i].VariacionId ] = {
+                id: result[i].VariacionId,
+                nombre: result[i].VariacionNombre,
+                value: result[i].VariacionValor,
+                valueNombre: result[i].VariacionValueNombre
+            }
+        }
+    }
+
+    data = limpiar_array(data)
+
+    res.send({code: 1, data})
+})
+
+app.post('/api/admin/pedido-enviado', async (req, res) => {
+
+    const { id } = req.body
+    if(!id) return res.status(500).send({err: 'id is required.'})
+
+    await mysqlQuery('UPDATE pedidos SET enviado=1 WHERE id=?')
+    res.send({code: 1})
+})
+
+app.get('/api/admin/pedidos', async(req, res) => {
+
+    const { mayor } = req.params
+
+    let query_mayor = " "
+
+    if(mayor) {
+        query_mayor = ` AND P.id > ${mayor} `;
+    }
+
+    const [err, result] = await mysqlQuery(`
+    SELECT 
+        P.*,
+        PP.*,
+        VVD.valor AS VariacionValueNombre,
+        VD.nombre AS VariacionNombre,
+        PV.variacionid AS VariacionId,
+        PV.valor AS VariacionValor,
+        PS.nombre AS nombreProducto,
+        PS.precio AS precioProducto,
+        PS.formato_de_venta AS formatoProducto,
+        P.id AS idPedido,
+        PP.id AS PProductoId,
+        PV.id AS PVarId
+    FROM pedidos P
+        LEFT JOIN pedidos_productos PP ON PP.pedidoid = P.id
+        LEFT JOIN productos PS ON PS.id = PP.productoid
+        LEFT JOIN pedidos_variaciones PV ON PV.pedidoid = P.id AND PV.pedidoproducto = PP.id
+        LEFT JOIN variaciones VD ON VD.id = PV.VariacionId
+        LEFT JOIN variaciones_value VVD ON VVD.id = PV.valor
+    WHERE P.enviado = 0 ${query_mayor}
+    ORDER BY P.id DESC
+`)
+    if(err) return res.status(500).send({err: 'MySQL error.'})
+    let data = []
+
+    for(let i = 0; i < result.length; i++) {
+
+        if(!data[ result[i].idPedido ]) {
+            data[ result[i].idPedido ] = {
+                telefono: result[i].telefono,
+                nombre: result[i].nombre,
+                id: result[i].idPedido,
+                direccion: result[i].direccion,
+                ciudad: result[i].ciudad,
+                pago: result[i].pago,
+                pagado: result[i].pagado,
+                enviar: result[i].enviar,
+                enviado: result[i].enviado,
+                fecha: result[i].fecha,
+                productos: []
+            }
+        }
+
+        if(!data[ result[i].idPedido ].productos[ result[i].PProductoId]) {
+            data[ result[i].idPedido ].productos[ result[i].PProductoId] = {
+                cantidad: result[i].cantidad,
+                productoid: result[i].productoid,
+                nombre: result[i].nombreProducto,
+                precio: result[i].precioProducto,
+                formato: result[i].formatoProducto,
+                variaciones: []
+            }
+        }
+
+        if(!data[ result[i].idPedido ].productos[ result[i].PProductoId].variaciones[ result[i].VariacionId ]) {
+            data[ result[i].idPedido ].productos[ result[i].PProductoId].variaciones[ result[i].VariacionId ] = {
+                id: result[i].VariacionId,
+                nombre: result[i].VariacionNombre,
+                value: result[i].VariacionValor,
+                valueNombre: result[i].VariacionValueNombre
+            }
+        }
+    }
+    data = limpiar_array(data)
+    res.send({code: 1, data})
+
+})
+
+function limpiar_array(array) {
+    if(Array.isArray(array)) {
+        array = array.filter(i => i != null)
+
+        for(let i = 0; i < array.length; i++) {
+
+            const objects = Object.keys(array[i])
+
+            for(let j = 0; j < objects.length; j++) {
+
+                if(Array.isArray(array[i][objects[j]]) || typeof array[i][objects[j]] == "object") {
+                    array[i][objects[j]] = limpiar_array(array[i][objects[j]])
+                }
+            }
+
+        }
+    } else if(typeof array == "object") {
+        const objects = Object.keys(array)
+        for(let i = 0; i < objects.length; i++) {
+            if(typeof objects[i] == "object") {
+                objects[i] = limpiar_array(objects[i])
+            }
+        }
+    }
+    return array
+}
+
 app.post('/api/admin/pedido', async(req, res) => {
 
     let  {
@@ -108,7 +294,6 @@ app.post('/api/admin/pedido', async(req, res) => {
 
     if(enviar == 1)
     {
-        console.log("ENVIAR 1")
         crear_compra(
             productos,
             nombre,
@@ -119,7 +304,6 @@ app.post('/api/admin/pedido', async(req, res) => {
             1
         );
     } else {
-        console.log("ENVIAR 0")
         crear_compra(
             productos,
             '-',

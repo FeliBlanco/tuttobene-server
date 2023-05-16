@@ -4,6 +4,9 @@ const cors = require('cors')
 const bodyParser = require('body-parser')
 const fileUpload = require('express-fileupload');
 const path = require('path');
+var mercadopago = require('mercadopago');
+
+mercadopago.configurations.setAccessToken("TEST-7444149544855350-041318-bf8625fce15161c5ca76eff187a54d1b-200576816");
 
 
 const app = express()
@@ -15,6 +18,7 @@ app.use(bodyParser.urlencoded({
   limit: '50mb',
   extended: false,
 }))
+app.use(express.static('imagenes'));
 
 
 app.set('PORT', 3001)
@@ -43,6 +47,10 @@ con.connect(function(err) {
     console.log("Base de datos conectada!");
 });
 
+
+app.get('/imagenes/productos/:img', function(req, res){
+    res.sendFile( `${__dirname}/imagenes/productos/${req.params.img}` );
+}); 
 
 /* USERS */
 
@@ -125,6 +133,14 @@ app.post('/api/admin/pedido', async(req, res) => {
     res.send({code: 1})
 })
 
+app.get('/api/recibir-pedido', async (req, res) => {
+    const {
+        type,
+        data_id
+    } = req.params
+    console.log(req)
+})
+
 app.post('/api/pedidos/send', async(req, res) => {
 
     let {
@@ -141,6 +157,50 @@ app.post('/api/pedidos/send', async(req, res) => {
     productos = JSON.parse(productos);
 
     if(formaPago == 0) {
+
+        let items = []
+
+        for(let i = 0; i < productos.length; i++) {
+            items.push({
+                id: productos[i].id.toString(),
+                title: productos[i].nombre,
+                description: productos[i].descripcion,
+                quantity: productos[i].cantidad,
+                unit_price: productos[i].precio
+            })
+        }
+
+        var payment_data = {
+            transaction_amount: 100,
+            token: 'ff8080814c11e237014c1ff593b57b4d',
+            installments: 1,
+            items: items,
+            description:"Tutto Bene",
+            metadata: {
+                nombre: nombre,
+                direccion: direccion,
+                ciudad: ciudad,
+                telefono: telefono,
+                formaEnvio: formaEnvio,
+                formaPago: formaPago,
+                productos: JSON.stringify(productos)
+            },
+            auto_return:'approved',
+            back_urls: {
+                success: 'http://localhost:3001/api/recibir-pedido'
+            },
+            installments: 1,
+            payer: {
+              type: "customer",
+              id: "123456789-jxOV430go9fx2e"
+            },
+            //notification_url: "http://localhost:3001/api/"
+            
+          };
+          
+          mercadopago.preferences.create(payment_data).then(function (data) {
+            console.log(data);
+          });
 
     } else {
         if(crear_compra(

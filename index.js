@@ -604,7 +604,7 @@ app.post('/api/products/delete', (req, res) => {
 
     const { id } = req.body
     if(!id) return res.sendStatus(500)
-    con.query(`DELETE FROM productos WHERE id = ?`, [productoid], (err, result) => {
+    con.query(`DELETE FROM productos WHERE id = ?`, [id], (err, result) => {
         if(err) return res.sendStatus(500)
         res.send({code: 1})
     })

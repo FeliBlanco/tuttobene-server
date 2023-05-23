@@ -173,6 +173,14 @@ app.post('/api/admin/pedido-enviado', async (req, res) => {
     res.send({code: 1})
 })
 
+app.get('/api/pedidosEnviadosInfo', async(req, res) => {
+    const { token } = req.body
+    console.log(req.body)
+    const [err, result] = await mysqlQuery(` SELECT * FROM pedidos WHERE tokenPedido = ? LIMIT 1;`, token)
+    console.log(result)
+})
+
+
 app.get('/api/admin/pedidos', async(req, res) => {
 
     const { mayor } = req.params
@@ -335,7 +343,11 @@ app.post('/api/pedidos/send', async(req, res) => {
         telefono,
         direccion,
         ciudad,
+        tokenPedido // llega el nombre del token para identificar le pedido en la bd
     } = req.body
+    
+    console.log("tokenPedido")
+    console.log(tokenPedido)
 
 
     productos = JSON.parse(productos);
@@ -367,6 +379,7 @@ app.post('/api/pedidos/send', async(req, res) => {
                 telefono: telefono,
                 formaEnvio: formaEnvio,
                 formaPago: formaPago,
+                tokenPedido: tokenPedido,
                 productos: JSON.stringify(productos)
             },
             auto_return:'approved',
@@ -394,7 +407,8 @@ app.post('/api/pedidos/send', async(req, res) => {
             direccion,
             ciudad,
             formaPago,
-            formaEnvio
+            formaEnvio,
+            tokenPedido
         ))
         {
             res.send({code: 1})
@@ -861,7 +875,7 @@ function mysqlQuery(query, params = []) {
     })
 }
 
-async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, formaEnvio) {
+async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, formaEnvio, tokenPedido) {
     if(!tel) return 1;
     if(!dire) return 1;
 
@@ -877,9 +891,9 @@ async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, for
     const [err, result] = await mysqlQuery(`
         INSERT INTO
             pedidos
-        (nombre, telefono, direccion, ciudad, pago, fecha, enviar, enviado, pagado)
+        (nombre, telefono, direccion, ciudad, pago, fecha, enviar, enviado, pagado, tokenPedido)
             VALUES
-        (?, ?, ?, ?, ?, ?, ?, 0, ?)
+        (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
     `, [
         nombre,
         tel,
@@ -888,7 +902,8 @@ async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, for
         formaPago,
         fecha,
         formaEnvio,
-        pagado
+        pagado, 
+        tokenPedido
     ])
     if(err) return false
 

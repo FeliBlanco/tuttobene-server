@@ -173,6 +173,14 @@ app.post('/api/admin/pedido-enviado', async (req, res) => {
     res.send({code: 1})
 })
 
+app.get('/api/pedidosEnviadosInfo', async(req, res) => {
+    const { token } = req.body
+    console.log(req.body)
+    const [err, result] = await mysqlQuery(` SELECT * FROM pedidos WHERE tokenPedido = ? LIMIT 1;`, token)
+    console.log(result)
+})
+
+
 app.get('/api/admin/pedidos', async(req, res) => {
 
     const { mayor } = req.params
@@ -335,7 +343,11 @@ app.post('/api/pedidos/send', async(req, res) => {
         telefono,
         direccion,
         ciudad,
+        tokenPedido // llega el nombre del token para identificar le pedido en la bd
     } = req.body
+    
+    console.log("tokenPedido")
+    console.log(tokenPedido)
 
 
     productos = JSON.parse(productos);
@@ -367,6 +379,7 @@ app.post('/api/pedidos/send', async(req, res) => {
                 telefono: telefono,
                 formaEnvio: formaEnvio,
                 formaPago: formaPago,
+                tokenPedido: tokenPedido,
                 productos: JSON.stringify(productos)
             },
             auto_return:'approved',
@@ -394,7 +407,8 @@ app.post('/api/pedidos/send', async(req, res) => {
             direccion,
             ciudad,
             formaPago,
-            formaEnvio
+            formaEnvio,
+            tokenPedido
         ))
         {
             res.send({code: 1})
@@ -604,7 +618,7 @@ app.post('/api/products/delete', (req, res) => {
 
     const { id } = req.body
     if(!id) return res.sendStatus(500)
-    con.query(`DELETE FROM productos WHERE id = ?`, [productoid], (err, result) => {
+    con.query(`DELETE FROM productos WHERE id = ?`, [id], (err, result) => {
         if(err) return res.sendStatus(500)
         res.send({code: 1})
     })
@@ -810,12 +824,12 @@ app.get('/api/categories/getAllWithProducts', async (req, res) => {
 })
 
 app.post('/api/categories/delete', async (req, res) => {
-
     const { id } = req.body;
     if(!id) return res.status(500).send({err: 'id is required'})
+    console.log("id: " + id)
 
     const [err, result] = await mysqlQuery("DELETE FROM categorias WHERE id = ?", [id])
-    if(err) return res.status(500).send({err: 'MySQL error'})
+    /* if(err) return res.status(500).send({err: 'MySQL error'}) */
     res.send({code: 1})
 })
 
@@ -836,8 +850,7 @@ app.post('/api/categories/edit', async (req, res) => {
     if(!nombre) return res.status(500).send({err: 'nombre is required'})
     if(!id) return res.status(500).send({err: 'id is required'})
 
-    await mysqlQuery("UPDATE categorias set nombre = ? WHERE id = ? ", [nombre, id])
-    if(err) return res.status(500).send({err: 'MySQL error'})
+    const sql = await mysqlQuery("UPDATE categorias set nombre = ? WHERE id = ? ", [nombre, id])
     res.send({code: 1})
 })
 
@@ -862,7 +875,7 @@ function mysqlQuery(query, params = []) {
     })
 }
 
-async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, formaEnvio) {
+async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, formaEnvio, tokenPedido) {
     if(!tel) return 1;
     if(!dire) return 1;
 
@@ -878,9 +891,9 @@ async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, for
     const [err, result] = await mysqlQuery(`
         INSERT INTO
             pedidos
-        (nombre, telefono, direccion, ciudad, pago, fecha, enviar, enviado, pagado)
+        (nombre, telefono, direccion, ciudad, pago, fecha, enviar, enviado, pagado, tokenPedido)
             VALUES
-        (?, ?, ?, ?, ?, ?, ?, 0, ?)
+        (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
     `, [
         nombre,
         tel,
@@ -889,7 +902,8 @@ async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, for
         formaPago,
         fecha,
         formaEnvio,
-        pagado
+        pagado, 
+        tokenPedido
     ])
     if(err) return false
 

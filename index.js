@@ -678,66 +678,52 @@ app.post('/api/products/add', async (req, res) => {
     }
 })
 
-app.get('/api/products/getTop', (req, res) => {
+app.get('/api/products/getTop', async (req, res) => {
 
-    let data = []
-    con.query(`
+
+    const [err, result] = await mysqlQuery(`
         SELECT *, V.nombre AS vNombre, V.id AS vId, P.nombre AS pNombre, P.id AS pId, VV.valor AS vvNombre, VV.id AS vvId
             from productos P 
-        INNER JOIN variaciones V ON V.productoid = P.id 
-        INNER JOIN variaciones_value VV ON VV.variacionid = V.id 
+        LEFT JOIN variaciones V ON V.productoid = P.id 
+        LEFT JOIN variaciones_value VV ON VV.variacionid = V.id 
         ORDER BY P.ventas DESC LIMIT 15
-    `, [], (err, result) => {
-        if(err) return res.sendStatus(500)
+    `)
+    let data = []
+    if(!err) {
 
         for(let i = 0; i < result.length; i++) {
 
-            const productoId = data.findIndex(j => j.id == result[i].pId)
-
-            let variaciones = {
-                id: result[i].vId,
-                nombre: result[i].vNombre,
-                values: []
-            }
-
-            if(productoId == -1) {
-                data.push({
+            if(!data[ result[i].pId ]) {
+                data[ result[i].pId ] = {
                     id: result[i].pId,
                     nombre: result[i].pNombre,
                     precio: result[i].precio,
                     imagen: result[i].imagen,
                     descripcion: result[i].descripcion,
                     formato: result[i].formato_de_venta,
-                    variaciones: [{
-                        id: result[i].vId,
-                        nombre: result[i].vNombre,
-                        values: [{
-                            nombre: result[i].vvNombre,
-                            id: result[i].vvId
-                        }]                       
-                    }]
-                })
-            } else {
-                const variacionId = data[ productoId ].variaciones.findIndex(j => j.id == result[i].pId)
-                if(variacionId == -1) {
-                    data[ productoId ].variaciones.push({
-                        id: result[i].vId,
-                        nombre: result[i].vNombre,
-                        values: [{
-                            nombre: result[i].vvNombre,
-                            id: result[i].vvId
-                        }]   
-                    })
-                } else {
-                    data[ productoId ].variaciones[ variacionId ].values.push({
-                        nombre: result[i].vvNombre,
-                        id: result[i].vvId
-                    })
+                    disponibilidad:1,
+                    variaciones: []
                 }
             }
+
+            if(!data[ result[i].pId ].variaciones[ result[i].vId ]) {
+                data[ result[i].pId ].variaciones[ result[i].vId ] = {
+                    id: result[i].vId,
+                    nombre: result[i].vNombre,
+                    values: []
+                }
+            }
+
+            data[ result[i].pId ].variaciones[ result[i].vId ].values.push({
+                nombre: result[i].vvNombre,
+                id: result[i].vvId
+            })
         }
-        res.send({code: 1, data})
-    })
+    }
+
+    console.log(data)
+
+    res.send({code: 1, data: limpiar_array(data)})
 })
 
 

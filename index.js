@@ -11,11 +11,7 @@ mercadopago.configurations.setAccessToken("TEST-7444149544855350-041318-bf8625fc
 
 const app = express()
 
-app.use(cors({
-    origin: 'http://154.49.246.87/', // Reemplaza esto con tu dominio permitido
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }))
+
 app.use(fileUpload());
 app.use(bodyParser.json({ limit: '80mb' }))
 app.use(bodyParser.urlencoded({
@@ -23,13 +19,8 @@ app.use(bodyParser.urlencoded({
   extended: false,
 }))
 app.use(express.static('imagenes'));
+app.use(cors({origin:'*'}));
 
-app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3001');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    next();
-  });
 
 
 app.set('PORT', 3001)
@@ -42,7 +33,7 @@ app.listen(app.get('PORT'), () => {
 const con = mysql.createConnection({
     host:'localhost',
     database:'tuttobene',
-    user:'root',
+    user:'valen',
     password:'alvear470'
 })
 

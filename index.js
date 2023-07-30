@@ -5,6 +5,10 @@ const bodyParser = require('body-parser')
 const fileUpload = require('express-fileupload');
 const path = require('path');
 var mercadopago = require('mercadopago');
+const https = require('https');
+const http = require('http')
+const fs = require('fs');
+const { Server } = require("socket.io");
 
 mercadopago.configurations.setAccessToken("TEST-7444149544855350-041318-bf8625fce15161c5ca76eff187a54d1b-200576816");
 
@@ -23,9 +27,26 @@ app.use(cors({origin:'*'}));
 
 
 
-app.set('PORT', 3001)
+app.set('PORT', 2053)
 
-app.listen(app.get('PORT'), () => {
+const privateKey = fs.readFileSync('/var/www/certs/tuttobene.online.key', 'utf-8');
+const certificate = fs.readFileSync('/var/www/certs/tuttobene.online.pem', 'utf-8');
+
+const credentials = { key: privateKey, cert: certificate };
+
+
+//const credentials = {}
+
+
+const server = https.createServer(credentials, app);
+
+const io = new Server(server ,{
+    cors: {
+        origin: '*'
+    }
+});
+
+server.listen(app.get('PORT'), () => {
     console.log(`Server listening on port ${app.get('PORT')}...`)
 })
 
@@ -33,8 +54,8 @@ app.listen(app.get('PORT'), () => {
 const con = mysql.createConnection({
     host:'localhost',
     database:'tuttobene',
-    user:'valen',
-    password:'alvear470'
+    user:'root',
+    password:'tuttobene123'
 })
 
 /*const con = mysql.createConnection({
@@ -182,6 +203,17 @@ app.get('/api/pedidosEnviadosInfo', async(req, res) => {
     console.log(result)
 })
 
+app.post('/api/pedidos/changeState', async(req, res) => {
+    const { pedido, estado } = req.body
+
+    if(!pedido) return res.sendStatus(500).send({err_msg: 'pedido is required.'})
+    if(!estado) return res.sendStatus(500).send({err_msg: 'estado is required.'})
+
+    const [err, result] = await mysqlQuery(`UPDATE pedidos SET estado = ? WHERE id = ?`, [estado, pedido])
+    if(err) return res.sendStatus(500).send({err_msg: 'MySQL error #1'})
+    io.emit('pedido:changeState', {pedido, estado})
+    res.send({code: 1})
+})
 
 app.get('/api/admin/pedidos', async(req, res) => {
 
@@ -204,6 +236,7 @@ app.get('/api/admin/pedidos', async(req, res) => {
         PS.nombre AS nombreProducto,
         PS.precio AS precioProducto,
         PS.formato_de_venta AS formatoProducto,
+        PS.imagen AS imagen,
         P.id AS idPedido,
         PP.id AS PProductoId,
         PV.id AS PVarId
@@ -214,10 +247,10 @@ app.get('/api/admin/pedidos', async(req, res) => {
         LEFT JOIN variaciones VD ON VD.id = PV.VariacionId
         LEFT JOIN variaciones_value VVD ON VVD.id = PV.valor
     WHERE P.enviado = 0 ${query_mayor}
-    ORDER BY P.id DESC
 `)
     if(err) return res.status(500).send({err: 'MySQL error.'})
     let data = []
+    console.log(result)
 
     for(let i = 0; i < result.length; i++) {
 
@@ -233,6 +266,8 @@ app.get('/api/admin/pedidos', async(req, res) => {
                 enviar: result[i].enviar,
                 enviado: result[i].enviado,
                 fecha: result[i].fecha,
+                total: result[i].total,
+                estado: result[i].estado,
                 productos: []
             }
         }
@@ -244,6 +279,7 @@ app.get('/api/admin/pedidos', async(req, res) => {
                 nombre: result[i].nombreProducto,
                 precio: result[i].precioProducto,
                 formato: result[i].formatoProducto,
+                imagen: result[i].imagen,
                 variaciones: []
             }
         }
@@ -258,8 +294,8 @@ app.get('/api/admin/pedidos', async(req, res) => {
         }
     }
     data = limpiar_array(data)
+    data = data.reverse()
     res.send({code: 1, data})
-
 })
 
 function limpiar_array(array) {
@@ -327,12 +363,131 @@ app.post('/api/admin/pedido', async(req, res) => {
     res.send({code: 1})
 })
 
-app.get('/api/recibir-pedido', async (req, res) => {
-    const {
-        type,
-        data_id
-    } = req.params
-    console.log(req)
+app.post('/api/recibir-pedido', async (req, res) => {
+
+    const { type } = req.query
+
+    console.log("recibido")
+    if(type == "payment") {
+        console.log("payment")
+        console.log("dataid: "+req.query['data.id'])
+        mercadopago.payment.capture(req.query['data.id'], mercadopago, (error, response) => {
+            if (error){
+                console.log(error);
+            }else{
+                const data = response.body
+                if(data.status == 'approved') {
+                    const enviodata = data.metadata
+                    const productos = enviodata.productos
+                    console.log(productos)
+
+
+                    crear_compra(
+                        JSON.parse(productos),
+                        enviodata.nombre,
+                        enviodata.telefono,
+                        enviodata.direccion,
+                        enviodata.ciudad,
+                        enviodata.forma_pago,
+                        enviodata.forma_envio
+                    )
+
+                }
+            }
+        });
+    }
+
+    res.send({code: 1})
+})
+
+app.post('/api/pedidos/gets', async(req, res) => {
+    const { pedidos } = req.body
+
+    if(!pedidos) return res.statusCode(500).send({err_msg: 'pedidos is required.'})
+
+    let dataResult = []
+
+    for(let i = 0; i < pedidos.length; i++) {
+        const [err, result] = await mysqlQuery(`
+            SELECT
+                P.*,
+                (SELECT COUNT(*) FROM pedidos_productos PP WHERE PP.pedidoid = P.id ) AS cantproductos,
+                (SELECT PRO.imagen FROM pedidos_productos PP INNER JOIN productos PRO ON PRO.id = PP.productoid WHERE PP.pedidoid = P.id LIMIT 1) AS imagen
+            FROM pedidos P
+            WHERE P.codigo = ?
+            LIMIT 1`, [pedidos[i]])
+        if(!err) {
+            if(result.length > 0) dataResult.push({...result[0]})
+        }
+    }
+    res.send({code: 1, data: dataResult})
+})
+
+app.post('/api/pedidos/get', async(req, res) => {
+
+    const { codigo } = req.body
+    if(!codigo) return res.statusCode(500).send({err_msg:'codigo is required.'})
+
+    const [err, result] = await mysqlQuery(`SELECT * FROM pedidos P WHERE P.codigo = ?`, [codigo])
+    if(err) return res.statusCode(500).send({err_msg:'MySQL error #1'})
+
+    //console.log(result)
+    if(result.length == 0) {
+        res.send({code: 0})
+    } else {
+
+        let data = {
+            ...result[0],
+            productos: []
+        }
+
+        const [errP, resultP] = await mysqlQuery(`SELECT * FROM pedidos_productos WHERE pedidoid = ?`, [result[0].id])
+        if(!errP) {
+
+            if(resultP.length > 0) {
+                for(let i = 0; i < resultP.length; i++) {
+
+                    /* CADA PRODUCTO - EACH PRODUCT */
+    
+                    const [errPP, resultPP] = await mysqlQuery(`
+                    SELECT
+                        P.*,
+                        PV.variacionid,
+                        PV.valor,
+                        V.nombre AS variacionNombre,
+                        VV.valor
+                    FROM 
+                    productos P
+
+                    INNER JOIN pedidos_variaciones PV ON PV.pedidoproducto = ?
+                    INNER JOIN variaciones V ON V.id = PV.variacionid
+                    INNER JOIN variaciones_value VV ON VV.id = PV.valor
+                    WHERE P.id = ?
+                    `, [resultP[i].id, resultP[i].productoid])
+                    if(!errPP) {
+                        if(resultPP.length > 0) {
+
+                            let variaciones = []
+
+                            for(let j = 0; j < resultPP.length; j++) {
+                                variaciones.push({nombre: resultPP[j].variacionNombre, valor: resultPP[j].valor})
+                            }
+
+                            delete resultPP[0].variacionNombre;
+                            delete resultPP[0].valor
+                            delete resultPP[0].variacionid
+
+
+                            data.productos.push({...resultPP[0], cantidad: resultP[i].cantidad, variaciones})
+                        }
+                    }
+                }
+            }
+
+        }
+
+        res.send({code: 1, data})
+    }
 })
 
 app.post('/api/pedidos/send', async(req, res) => {
@@ -348,8 +503,6 @@ app.post('/api/pedidos/send', async(req, res) => {
         tokenPedido // llega el nombre del token para identificar le pedido en la bd
     } = req.body
     
-    console.log("tokenPedido")
-    console.log(tokenPedido)
 
 
     productos = JSON.parse(productos);
@@ -381,13 +534,13 @@ app.post('/api/pedidos/send', async(req, res) => {
                 telefono: telefono,
                 formaEnvio: formaEnvio,
                 formaPago: formaPago,
-                tokenPedido: tokenPedido,
                 productos: JSON.stringify(productos)
             },
-            auto_return:'approved',
-            back_urls: {
-                success: 'http://localhost:3001/api/recibir-pedido'
-            },
+            //auto_return:'approved',
+            /*back_urls: {
+                success: 'http://154.49.246.87:3001/api/recibir-pedido'
+            },*/
+            notification_url: 'https://tuttobene.online:2053/api/recibir-pedido',
             installments: 1,
             payer: {
               type: "customer",
@@ -398,25 +551,22 @@ app.post('/api/pedidos/send', async(req, res) => {
           };
           
           mercadopago.preferences.create(payment_data).then(function (data) {
-            console.log(data);
+            res.send({code: 1, preference_id: data.body.id})
           });
 
     } else {
-        if(crear_compra(
+        const codigo = await crear_compra(
             productos,
             nombre,
             telefono,
             direccion,
             ciudad,
             formaPago,
-            formaEnvio,
-            tokenPedido
-        ))
-        {
-            res.send({code: 1})
-        } else {
-            res.send({code: 0})
-        }
+            formaEnvio
+        )
+        console.log("codigo: ")
+        console.log(codigo)
+        res.send({code: 1, codigo})
     }
 
 })
@@ -511,7 +661,7 @@ app.post('/api/products/carrito', async (req, res) => {
 
     let data = []
 
-    for(let p = 0; p < productos.length; p++) {
+    for(let p = productos.length - 1; p >= 0; p--) {
         const [err, result] = await mysqlQuery(`
             SELECT
                 P.*,
@@ -526,9 +676,11 @@ app.post('/api/products/carrito', async (req, res) => {
         `, [productos[p].id])
         if(!err) {
 
+            let info = null
+
             for(let i = 0; i < result.length; i++) {
-                if(!data[ result[i].id ]) {
-                    data[ result[i].id ] = {
+                if(info == null) {
+                    info = {
                         id: result[i].id,
                         nombre: result[i].nombre,
                         precio: result[i].precio,
@@ -539,12 +691,12 @@ app.post('/api/products/carrito', async (req, res) => {
                     }
                 }
     
-                if(!data[ result[i].id ].variaciones[ result[i].vId ]) {
+                if(!info.variaciones[ result[i].vId ]) {
 
                     for(let v = 0; v < productos[p].variaciones.length; v++) {
                         const variacion = productos[p].variaciones[v]
                         if(variacion.id == result[i].vId && variacion.value == result[i].vvId) {
-                            data[ result[i].id ].variaciones[ result[i].vId ] = {
+                            info.variaciones[ result[i].vId ] = {
                                 id: result[i].vId,
                                 nombre: result[i].vNombre,
                                 value: result[i].vvId,
@@ -555,6 +707,7 @@ app.post('/api/products/carrito', async (req, res) => {
                     }
                 }
             }
+            data.push(info)
 
         }
     }
@@ -658,9 +811,9 @@ app.post('/api/products/add', async (req, res) => {
     let imagen = randomString(20)+".jpg"//generar nombre random con una funcion
 
 
-    const [err, result] = await mysqlQuery(`INSERT INTO productos (nombre, precio, categoria, imagen, descripcion, formato_de_venta) VALUES (?, ?, ?, ?, ?, ?)`, [nombre, precio, categoria, imagen, descripcion, formato])
+    const [err, result] = await mysqlQuery(`INSERT INTO productos (nombre, precio, categoria, imagen, descripcion, formato_de_venta, ventas) VALUES (?, ?, ?, ?, ?, ?, 0)`, [nombre, precio, categoria, imagen, descripcion, formato])
 
-    if(err) return res.status(500).send({err: 'MySQL error #1'})
+    if(err) return res.status(500).send({err: 'MySQL error #1', msg: err})
     const productId = result.insertId
 
     for(let i = 0; i < variaciones.length; i++) {
@@ -675,9 +828,9 @@ app.post('/api/products/add', async (req, res) => {
             img.mv(`${__dirname}/imagenes/productos/${imagen}`, (err) => {
                 if(err) return console.log(err)
             })
-            res.send({code: 1})
         }
     }
+    res.send({code: 1})
 })
 
 app.get('/api/products/getTop', async (req, res) => {
@@ -826,7 +979,7 @@ app.post('/api/categories/add', async (req, res) => {
     const { nombre, subcat } = req.body
 
     if(!nombre) return res.status(500).send({err: 'nombre is required'})
-    if(!subcat) return res.status(500).send({err: 'subcat is required'})
+    if(subcat == null) return res.status(500).send({err: 'subcat is required'})
 
     const [err, result] = await mysqlQuery('INSERT INTO categorias (nombre, subcat) VALUES (?, ?)', [nombre, subcat])
     if(err) return res.status(500).send({err: 'MySQL error'})
@@ -863,23 +1016,29 @@ function mysqlQuery(query, params = []) {
     })
 }
 
-async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, formaEnvio, tokenPedido) {
+async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, formaEnvio) {
     if(!tel) return 1;
     if(!dire) return 1;
 
     //productos = JSON.parse(productos)
 
-    const fecha = new Date;
+    const fecha = Date.now();
 
     let pagado = 0;
 
     if(formaPago == 0) pagado = 1;
 
+    let total = 0;
+
+    for(let i = 0; i < productos.length; i++) {
+        total += productos[i].precio * productos[i].cantidad
+    }
+//ALTER TABLE `pedidos` ADD `total` INT NOT NULL AFTER `codigo`;
 
     const [err, result] = await mysqlQuery(`
         INSERT INTO
             pedidos
-        (nombre, telefono, direccion, ciudad, pago, fecha, enviar, enviado, pagado, tokenPedido)
+        (nombre, telefono, direccion, ciudad, pago, fecha, enviar, enviado, pagado, total)
             VALUES
         (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
     `, [
@@ -890,12 +1049,16 @@ async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, for
         formaPago,
         fecha,
         formaEnvio,
-        pagado, 
-        tokenPedido
+        pagado,
+        total
     ])
-    if(err) return false
+    if(err) return console.log(err)
 
     const idpedido = result.insertId
+
+    const codigo = `${idpedido}${Date.now()}`
+
+    await mysqlQuery(`UPDATE pedidos SET codigo = ? WHERE id = ?`, [codigo, idpedido])
 
 
     for(let i = 0; i < productos.length; i++) 
@@ -903,15 +1066,16 @@ async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, for
         const [err2, result2] = await mysqlQuery(`
             INSERT INTO
                 pedidos_productos
-            (pedidoid, productoid, cantidad)
+            (pedidoid, productoid, cantidad, precio)
                 VALUES
-            (?, ?, ?)`,
+            (?, ?, ?, ?)`,
             [
                 idpedido,
                 productos[i].id,
-                productos[i].cantidad
+                productos[i].cantidad,
+                productos[i].precio
             ])
-        if(err2) return false
+        if(err2) return console.log(err2)
 
 
         const idpedidop = result2.insertId;
@@ -933,4 +1097,8 @@ async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, for
             ])                   
         }
     }
+
+    
+    io.emit('compra:create', {nombre, telefono: tel, direccion: dire, ciudad, pago: formaPago, enviar: formaEnvio, id: idpedido, total, pagado, fecha, estado: 0, productos, enviado: 0})
+    return codigo
 }

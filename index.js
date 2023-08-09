@@ -315,6 +315,7 @@ function limpiar_array(array) {
 
         }
     } else if(typeof array == "object") {
+        if(array == null) return null//hay q ver q onda con esto
         const objects = Object.keys(array)
         for(let i = 0; i < objects.length; i++) {
             if(typeof objects[i] == "object") {
@@ -338,6 +339,7 @@ app.post('/api/admin/pedido', async(req, res) => {
 
     productos = JSON.parse(productos)
 
+
     if(enviar == 1)
     {
         crear_compra(
@@ -352,10 +354,10 @@ app.post('/api/admin/pedido', async(req, res) => {
     } else {
         crear_compra(
             productos,
-            '-',
+            nombre,
             telefono,
-            '',
-            '',
+            '-',
+            '-',
             1,
             0
         );
@@ -494,7 +496,7 @@ app.post('/api/pedidos/send', async(req, res) => {
 
     let {
         formaPago,// 0 = mercadoPago | 1 = Efectivo
-        formaEnvio,// 0 = Domicilio | 1 = Local
+        formaEnvio,// 1 = Domicilio | 0 = Local
         productos,
         nombre,
         telefono,
@@ -1017,8 +1019,10 @@ function mysqlQuery(query, params = []) {
 }
 
 async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, formaEnvio) {
+    console.log("Crear compra")
     if(!tel) return 1;
     if(!dire) return 1;
+    console.log("# crear_compra()")
 
     //productos = JSON.parse(productos)
 

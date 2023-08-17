@@ -209,10 +209,15 @@ app.post('/api/pedidos/changeState', async(req, res) => {
     if(!pedido) return res.sendStatus(500).send({err_msg: 'pedido is required.'})
     if(!estado) return res.sendStatus(500).send({err_msg: 'estado is required.'})
 
-    const [err, result] = await mysqlQuery(`UPDATE pedidos SET estado = ? WHERE id = ?`, [estado, pedido])
+    let enviado = 0
+
+    if(estado == 3) enviado = 1
+
+    const [err, result] = await mysqlQuery(`UPDATE pedidos SET estado = ?, enviado = ? WHERE id = ?`, [estado, enviado, pedido])
     if(err) return res.sendStatus(500).send({err_msg: 'MySQL error #1'})
-    io.emit('pedido:changeState', {pedido, estado})
-    res.send({code: 1})
+    
+    io.emit('pedido:changeState', {pedido, estado, enviado})
+    res.send({code: 1, enviado})
 })
 
 app.get('/api/admin/pedidos', async(req, res) => {

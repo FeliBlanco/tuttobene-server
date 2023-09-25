@@ -1,12 +1,12 @@
 const express = require('express')
-const mysql = require('mysql')
+const mysql = require('mysql2')
 const cors = require('cors')
 const bodyParser = require('body-parser')
 const fileUpload = require('express-fileupload');
 const path = require('path');
 var mercadopago = require('mercadopago');
 const https = require('https');
-const http = require('http')
+/* const http = require('http') */
 const fs = require('fs');
 const { Server } = require("socket.io");
 
@@ -26,19 +26,71 @@ app.use(express.static('imagenes'));
 app.use(cors({origin:'*'}));
 
 
+const PORT = process.env.PORT || 3001;
 
-app.set('PORT', 2053)
+app.set('PORT', PORT)
 
-/*const privateKey = fs.readFileSync('/var/www/certs/tuttobene.online.key', 'utf-8');
-const certificate = fs.readFileSync('/var/www/certs/tuttobene.online.pem', 'utf-8');
+const privateKey = `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDLDikUaseHfmlp
+omdzC4dEWnpCA5HYpMVGqF71gfjrjPDv7pvsoFgPktCLmD9K7MPrcwuovZcLb2Ya
+K/sPdZU81vv+VCudLRRJrHs0K0thaTkK1p9nq5tI2Uz57NmsjLEZJAPe/zcuYvTJ
+bPTHwbrOe9rTIptM0UK9JanBrLmsScksPx68bpCQXzlizY6x1Yj1Kw0sIJ5Iz/hg
+L8GY/BbgRwqVgDcIqZ6HxSuGuBiMMwjWxUmCf6xgzYVQoeqCrU9NfWObRXVLaq2c
+aZbqCrfKVhuLRfkI1ifHKN1q5zDqGxYgbBiMBgSm33qHOA5nHaNz08Wj3XNfG9Mz
+eZYtrgdNAgMBAAECggEAWAQN029LiNRHLgY68De9jOfpGadBd1ZIus1tx95sPvIL
+V/0mMkX4lduOMQwv1zLU48Cs+5oemFLTv6FzxGoz47jOZxomA43QPvUYPG9Nz+4T
+zzpjw0Sz3Tpv7t93JR+g/mRJl0YqLZ2wPIVRfyre5fTyz9Uu2vfUBXgHYs+TdfWJ
+saaeW2qk3o4QHFk3ZwoR3jkLVy1GdqxIReY5CqV14J7omwk0A4gLONcqnJiJX9xp
+GTE3clfWWWTP+7lY+m4SwKHz2ZomR0WenhLGWmxfBqVY38+x9zmkVF/GCb57Gt9e
+nSOg2EtXxxn27JYohl4EOkBmCT9eK640nXBQEg5aUwKBgQD0PN0tkfPtvKu5ZmEb
+izlwOeZ7xSCn4YOYEa1/UtcUU2wA1ENlSNekU3FQL6sVQT9pSJTHGvXX91wJR8FH
+aYZmefRLfyx1Jmx2FkLieJaGouKGB+pk+vVfHUozs20np41Nh/HAyg26El1R5UKS
+SkZt1M5tZ5zjMWM8hMTByvUmPwKBgQDU1ZH7vs/LSICi6ovEiahbnR62t8L/P7wY
+Q/Xt3M+ti+zB8OlFeJK7HndXP6Vmq5cx8M0+hMv974ytrglZpC8hiiRxTp8tShKW
+vpVdX/N8v6a9IbOm2CY5GRLCqlsBd1cS2hujkcFta3wm9eSosX4sRzNftZGR9T3G
+QQHt3zXncwKBgDmzY2GPuLwytbNAX7K9Kp274BrfkH55BbjYfE+3R37S0pJDk4SL
+N/7ng7649Ec6OfvqnNOJKAmUs9axcBUp9gmhyDhJ3Dv1Duy7B6Qvbwhx1OhrWFHx
+BCUra0tZmXEj4Xsuocu1MJcEHa3qZtbe21K5Uud/8g2urk4u47kQ9OfLAoGBAIjG
+27NCU/3bETghrULYCIcfuS5JeBpbVkDt4+1CG4D3TGbysKcBrqJsGNvMPjp2CYuB
+qhUEeKgvu2OeVcny9osCYRskIK2VTc7smcbRNAQ2kiw3rWGKxT2qfGD349ZUYHPw
+ERUURY9RJQ9QtOsobeJ8u2pFoFCBn3p6Kog5C0Y7AoGASMtG339MH0bmlSM5oMkM
+AGemrz5ED1ei2JwhguSiy/puvHiegTrqwUgxyxIZX1VJIadwxT8uI3Bor8TG+gAz
+orAjNLy8dohYsiXdO1v+n05cAg3pZFpeUQUmpNkjh9HuLasIQ0psdP029n2RZ/sf
+YH6UrIhQWROxWz7I9khweiE=
+-----END PRIVATE KEY-----
+`
+const certificate = `-----BEGIN CERTIFICATE-----
+MIID/TCCAuUCFFvdIY11R5pTnHtdR+ol/oqW0j/MMA0GCSqGSIb3DQEBCwUAMIG6
+MQswCQYDVQQGEwJBUjEMMAoGA1UECAwDQ0JBMRQwEgYDVQQHDAtWaWxsYSBNYXJp
+YTETMBEGA1UECgwKVHV0dG8gQmVuZTETMBEGA1UECwwKVHV0dG8gQmVuZTE8MDoG
+A1UEAwwzYmFja2VuZC10dXR0b2JlbmUtcmFpbHdheS1wcm9kdWN0aW9uLnVwLnJh
+aWx3YXkuYXBwMR8wHQYJKoZIhvcNAQkBFhBkZGFzZHNhQG1haWwuY29tMB4XDTIz
+MDkyNTE1MzgyOVoXDTI0MDkyNDE1MzgyOVowgboxCzAJBgNVBAYTAkFSMQwwCgYD
+VQQIDANDQkExFDASBgNVBAcMC1ZpbGxhIE1hcmlhMRMwEQYDVQQKDApUdXR0byBC
+ZW5lMRMwEQYDVQQLDApUdXR0byBCZW5lMTwwOgYDVQQDDDNiYWNrZW5kLXR1dHRv
+YmVuZS1yYWlsd2F5LXByb2R1Y3Rpb24udXAucmFpbHdheS5hcHAxHzAdBgkqhkiG
+9w0BCQEWEGRkYXNkc2FAbWFpbC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw
+ggEKAoIBAQDLDikUaseHfmlpomdzC4dEWnpCA5HYpMVGqF71gfjrjPDv7pvsoFgP
+ktCLmD9K7MPrcwuovZcLb2YaK/sPdZU81vv+VCudLRRJrHs0K0thaTkK1p9nq5tI
+2Uz57NmsjLEZJAPe/zcuYvTJbPTHwbrOe9rTIptM0UK9JanBrLmsScksPx68bpCQ
+XzlizY6x1Yj1Kw0sIJ5Iz/hgL8GY/BbgRwqVgDcIqZ6HxSuGuBiMMwjWxUmCf6xg
+zYVQoeqCrU9NfWObRXVLaq2caZbqCrfKVhuLRfkI1ifHKN1q5zDqGxYgbBiMBgSm
+33qHOA5nHaNz08Wj3XNfG9MzeZYtrgdNAgMBAAEwDQYJKoZIhvcNAQELBQADggEB
+ADnfkqunjG4ziK7RYy86npzvYXO3zs+AW6swNcGst48zwneRi1QRWh+Zy0ZWk+Pg
+QRzuwjeKoFPhm67mmHyYSFqPYxAlHSxZheEYjed7Ty8/rhqhsVXNWNC5lt25bppk
+2cB2+UoUokLxbkpLyHjvuZfBNM0Sc/n3k0gHkB9TOKCNuq0uAizU4xQuPtovSjMk
+jo9ADh1cudOSEu8SdxNs8AFft3/xW/d1x8fQvpG4e+Wa6MRB95edTc8DMev4EDm0
+zRKD9Zn2yQgVj9jrj+d3l1a0uTlEAfabaYRhOXpwoWpnR/TylVH9P72uEisTEiMI
+IgtHoVEu7xBre3u/F9PvAPk=
+-----END CERTIFICATE-----`
 
-const credentials = { key: privateKey, cert: certificate };*/
+const credentials = { key: privateKey, cert: certificate };
 
 
-//const credentials = {}
+ //const credentials = {} 
 
 
-const server = https.createServer({}, app);
+const server = https.createServer(credentials,app);
 
 const io = new Server(server ,{
     cors: {
@@ -46,16 +98,17 @@ const io = new Server(server ,{
     }
 });
 
-server.listen(app.get('PORT'), () => {
+app.listen(app.get('PORT'), () => {
     console.log(`Server listening on port ${app.get('PORT')}...`)
 })
 
 
 const con = mysql.createConnection({
-    host:'localhost',
-    database:'tuttobene',
+    host:'containers-us-west-133.railway.app',
+    database:'railway',
     user:'root',
-    password:'tuttobene123'
+    password:'3FXpjTDEhcDFMF1Xji0G',
+    port:6810
 })
 
 /*const con = mysql.createConnection({

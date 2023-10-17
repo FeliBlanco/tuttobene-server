@@ -10,7 +10,7 @@ const https = require('https');
 const fs = require('fs');
 const { Server } = require("socket.io");
 
-mercadopago.configurations.setAccessToken("TEST-7444149544855350-041318-bf8625fce15161c5ca76eff187a54d1b-200576816");
+//mercadopago.configurations.setAccessToken("TEST-7444149544855350-041318-bf8625fce15161c5ca76eff187a54d1b-200576816");
 
 
 const app = express()
@@ -23,10 +23,10 @@ app.use(bodyParser.urlencoded({
   extended: false,
 }))
 app.use(express.static('imagenes'));
-app.use(cors({origin:'*'}));
+app.use(cors(/*{origin:['http://localhost', 'http://localhost:3000', 'https://pruebatutto.alebike.online'], credentials:true}*/));
 
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8443;
 
 app.set('PORT', PORT)
 
@@ -94,13 +94,11 @@ const server = https.createServer(credentials,app);
 
 const io = new Server(server ,{
     cors: {
-        origin: '*'
-    }
+        origin: ['http://localhost:3000', 'https://pruebatutto.alebike.online', 'http://localhost'],
+        credentials: true
+    },
+    allowEIO3: true
 });
-
-app.listen(app.get('PORT'), () => {
-    console.log(`Server listening on port ${app.get('PORT')}...`)
-})
 
 
 const con = mysql.createConnection({
@@ -1165,3 +1163,7 @@ async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, for
     io.emit('compra:create', {nombre, telefono: tel, direccion: dire, ciudad, pago: formaPago, enviar: formaEnvio, id: idpedido, total, pagado, fecha, estado: 0, productos, enviado: 0})
     return codigo
 }
+
+server.listen(app.get('PORT'), () => {
+    console.log(`Server listening on port ${app.get('PORT')}...`)
+})

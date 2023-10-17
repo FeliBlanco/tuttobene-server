@@ -153,10 +153,10 @@ app.post('/api/user/login', async (req, res) => {
 app.post('/api/user/get', async (req, res) => {
     const { token } = req.body
 
-    if(!token) return res.status(500).res({err: 'token is required.'})
+    if(!token) return res.status(500).send({err: 'token is required.'})
 
     const [err, result] = await mysqlQuery(`SELECT * FROM sesiones S INNER JOIN usuarios U ON U.id = S.usuario WHERE S.token = ? LIMIT 1`, [token])
-    if(err) return res.status(500).res({err: 'MySQL error.'})
+    if(err) return res.status(500).send({err: 'MySQL error.'})
 
     if(result.length > 0) {
         res.send({code: 1, data: result[0]})

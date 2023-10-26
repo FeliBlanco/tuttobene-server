@@ -26,7 +26,7 @@ app.use(express.static('imagenes'));
 app.use(cors(/*{origin:['http://localhost', 'http://localhost:3000', 'https://pruebatutto.alebike.online'], credentials:true}*/));
 
 
-const PORT = process.env.PORT || 8443;
+const PORT = process.env.PORT || 2053;
 
 app.set('PORT', PORT)
 
@@ -94,7 +94,7 @@ const server = https.createServer(credentials,app);
 
 const io = new Server(server ,{
     cors: {
-        origin: ['http://localhost:3000', 'https://pruebatutto.alebike.online', 'http://localhost'],
+        origin: ['http://localhost:3000', 'https://tuttobene.online', 'http://localhost'],
         credentials: true
     },
     allowEIO3: true
@@ -102,11 +102,10 @@ const io = new Server(server ,{
 
 
 const con = mysql.createConnection({
-    host:'containers-us-west-133.railway.app',
-    database:'railway',
-    user:'root',
-    password:'3FXpjTDEhcDFMF1Xji0G',
-    port:6810
+    host:'localhost',
+    database:'tuttobene',
+    user:'tino',
+    password:'tinovalen123'
 })
 
 /*const con = mysql.createConnection({

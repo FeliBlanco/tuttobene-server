@@ -413,7 +413,7 @@ app.post('/api/admin/pedido', async(req, res) => {
             telefono,
             direccion,
             ciudad,
-            0,
+            1,
             1
         );
     } else {
@@ -1085,6 +1085,9 @@ function mysqlQuery(query, params = []) {
 }
 
 async function crear_compra(productos, nombre, tel, dire, ciudad, formaPago, formaEnvio) {
+    //formaPago 0 = mercadoPago | 1 = Efectivo
+    //formaEnvio 1 = Domicilio | 0 = Local
+
     console.log("Crear compra")
     if(!tel) return 1;
     if(!dire) return 1;

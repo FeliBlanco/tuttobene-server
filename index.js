@@ -101,12 +101,13 @@ const io = new Server(server ,{
 });
 
 
-const con = mysql.createConnection({
+var con = mysql.createPool({
+    connectionLimit: 10,
     host:'localhost',
     database:'tuttobene',
     user:'tino',
     password:'tinovalen123'
-})
+});
 
 /*const con = mysql.createConnection({
     host:'localhost',
@@ -115,10 +116,19 @@ const con = mysql.createConnection({
     password:''
 })*/
 
-con.connect(function(err) {
+con.query("SELECT id FROM productos LIMIT 1", function (err, rows, fields) {
+    if (err) {
+        console.log('Hubo un error con la conexion a la base de datos!');
+        console.log(err);
+    } else {
+        console.log("Conexion con la base de datos exitosa!");
+    }
+});
+
+/*con.connect(function(err) {
     if (err) throw err;
     console.log("Base de datos conectada!");
-});
+});*/
 
 
 app.get('/imagenes/productos/:img', function(req, res){

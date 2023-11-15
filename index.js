@@ -4,13 +4,14 @@ const cors = require('cors')
 const bodyParser = require('body-parser')
 const fileUpload = require('express-fileupload');
 const path = require('path');
-var mercadopago = require('mercadopago');
+const { MercadoPagoConfig, Payment, Preference } = require('mercadopago');
 const https = require('https');
 /* const http = require('http') */
 const fs = require('fs');
 const { Server } = require("socket.io");
 
-//mercadopago.configurations.setAccessToken("TEST-7444149544855350-041318-bf8625fce15161c5ca76eff187a54d1b-200576816");
+const mercadoPago = new MercadoPagoConfig({ accessToken: 'TEST-7444149544855350-041318-bf8625fce15161c5ca76eff187a54d1b-200576816', options: { timeout: 5000, idempotencyKey: 'abc' } });
+
 
 
 const app = express()
@@ -434,16 +435,20 @@ app.post('/api/recibir-pedido', async (req, res) => {
 
     const { type } = req.query
 
+    console.log(req.query)
+
     console.log("recibido")
     if(type == "payment") {
         console.log("payment")
         console.log("dataid: "+req.query['data.id'])
-        mercadopago.payment.capture(req.query['data.id'], mercadopago, (error, response) => {
-            if (error){
-                console.log(error);
-            }else{
-                const data = response.body
-                if(data.status == 'approved') {
+
+        const payment = new Payment(mercadoPago);
+
+        payment.get({id: req.query['data.id']}).then((response) => {
+            const data = response
+            console.log("RESPONSEEE")
+            console.log(response)
+            if(data.status == 'approved') {
                     const enviodata = data.metadata
                     const productos = enviodata.productos
                     console.log(productos)
@@ -459,9 +464,10 @@ app.post('/api/recibir-pedido', async (req, res) => {
                         enviodata.forma_envio
                     )
 
-                }
             }
-        });
+        }).catch(err => {
+            console.log(err)
+        })
     }
 
     res.send({code: 1})
@@ -617,10 +623,17 @@ app.post('/api/pedidos/send', async(req, res) => {
             //notification_url: "http://localhost:3001/api/"
             
           };
+
+
+          const preference = new Preference(mercadoPago);
           
-          mercadopago.preferences.create(payment_data).then(function (data) {
-            res.send({code: 1, preference_id: data.body.id})
-          });
+          preference.create({body: payment_data}).then(function (data) {
+            console.log("DEVUELVEE")
+            console.log(data)
+            res.send({code: 1, preference_id: data.id})
+          }).catch(err => {
+            console.log(err)
+          })
 
     } else {
         const codigo = await crear_compra(

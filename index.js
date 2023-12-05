@@ -96,7 +96,7 @@ const server = https.createServer(credentials,app);
 
 const io = new Server(server ,{
     cors: {
-        origin: ['http://localhost:3000', 'https://tuttobene.online', 'http://localhost'],
+        origin: ['http://localhost:3000', 'https://pastastuttobene.com', 'http://localhost'],
         credentials: true
     },
     allowEIO3: true

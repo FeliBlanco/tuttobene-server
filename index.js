@@ -10,7 +10,7 @@ const https = require('https');
 const fs = require('fs');
 const { Server } = require("socket.io");
 
-const mercadoPago = new MercadoPagoConfig({ accessToken: 'TEST-7444149544855350-041318-bf8625fce15161c5ca76eff187a54d1b-200576816', options: { timeout: 5000, idempotencyKey: 'abc' } });
+const mercadoPago = new MercadoPagoConfig({ accessToken: 'APP_USR-7444149544855350-041318-39a02366ca6157a357d9a705552f4555-200576816', options: { timeout: 5000, idempotencyKey: 'abc' } });
 
 
 
@@ -32,58 +32,59 @@ const PORT = process.env.PORT || 2053;
 app.set('PORT', PORT)
 
 const privateKey = `-----BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDLDikUaseHfmlp
-omdzC4dEWnpCA5HYpMVGqF71gfjrjPDv7pvsoFgPktCLmD9K7MPrcwuovZcLb2Ya
-K/sPdZU81vv+VCudLRRJrHs0K0thaTkK1p9nq5tI2Uz57NmsjLEZJAPe/zcuYvTJ
-bPTHwbrOe9rTIptM0UK9JanBrLmsScksPx68bpCQXzlizY6x1Yj1Kw0sIJ5Iz/hg
-L8GY/BbgRwqVgDcIqZ6HxSuGuBiMMwjWxUmCf6xgzYVQoeqCrU9NfWObRXVLaq2c
-aZbqCrfKVhuLRfkI1ifHKN1q5zDqGxYgbBiMBgSm33qHOA5nHaNz08Wj3XNfG9Mz
-eZYtrgdNAgMBAAECggEAWAQN029LiNRHLgY68De9jOfpGadBd1ZIus1tx95sPvIL
-V/0mMkX4lduOMQwv1zLU48Cs+5oemFLTv6FzxGoz47jOZxomA43QPvUYPG9Nz+4T
-zzpjw0Sz3Tpv7t93JR+g/mRJl0YqLZ2wPIVRfyre5fTyz9Uu2vfUBXgHYs+TdfWJ
-saaeW2qk3o4QHFk3ZwoR3jkLVy1GdqxIReY5CqV14J7omwk0A4gLONcqnJiJX9xp
-GTE3clfWWWTP+7lY+m4SwKHz2ZomR0WenhLGWmxfBqVY38+x9zmkVF/GCb57Gt9e
-nSOg2EtXxxn27JYohl4EOkBmCT9eK640nXBQEg5aUwKBgQD0PN0tkfPtvKu5ZmEb
-izlwOeZ7xSCn4YOYEa1/UtcUU2wA1ENlSNekU3FQL6sVQT9pSJTHGvXX91wJR8FH
-aYZmefRLfyx1Jmx2FkLieJaGouKGB+pk+vVfHUozs20np41Nh/HAyg26El1R5UKS
-SkZt1M5tZ5zjMWM8hMTByvUmPwKBgQDU1ZH7vs/LSICi6ovEiahbnR62t8L/P7wY
-Q/Xt3M+ti+zB8OlFeJK7HndXP6Vmq5cx8M0+hMv974ytrglZpC8hiiRxTp8tShKW
-vpVdX/N8v6a9IbOm2CY5GRLCqlsBd1cS2hujkcFta3wm9eSosX4sRzNftZGR9T3G
-QQHt3zXncwKBgDmzY2GPuLwytbNAX7K9Kp274BrfkH55BbjYfE+3R37S0pJDk4SL
-N/7ng7649Ec6OfvqnNOJKAmUs9axcBUp9gmhyDhJ3Dv1Duy7B6Qvbwhx1OhrWFHx
-BCUra0tZmXEj4Xsuocu1MJcEHa3qZtbe21K5Uud/8g2urk4u47kQ9OfLAoGBAIjG
-27NCU/3bETghrULYCIcfuS5JeBpbVkDt4+1CG4D3TGbysKcBrqJsGNvMPjp2CYuB
-qhUEeKgvu2OeVcny9osCYRskIK2VTc7smcbRNAQ2kiw3rWGKxT2qfGD349ZUYHPw
-ERUURY9RJQ9QtOsobeJ8u2pFoFCBn3p6Kog5C0Y7AoGASMtG339MH0bmlSM5oMkM
-AGemrz5ED1ei2JwhguSiy/puvHiegTrqwUgxyxIZX1VJIadwxT8uI3Bor8TG+gAz
-orAjNLy8dohYsiXdO1v+n05cAg3pZFpeUQUmpNkjh9HuLasIQ0psdP029n2RZ/sf
-YH6UrIhQWROxWz7I9khweiE=
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCowa9J1OwdzazY
+GkDc0DdnDVpFrXi33SI6QuV3ApLnsmV+W+ehVCvZADGXLtI4/a8XilVqC8ifxxRA
+m8uftBfTHM3YaGIzNqvrOfkyZ3TwGZp72uPRus3W/PiODejneE+XAYmDFhqN1bjl
+Gu8846b2HFEKcv0DpZhrhFGUIqWBn7jaZJ6fOn3vLOHlzUhdIE7uM2nhx0zj8yH3
+B/IYCbvTtMNFBju/hkEvHIqbYHNRKXFgTf2JzcNsS5gFSKPrFi4f4PhT1aBy9KTf
+gVIYzO3EfeXkStXE4C+4JVqqgevDNFCvCsAbcQnGEymf4WWRXsrCJ9FKWyU1Jw7i
+ronM6pf9AgMBAAECggEAE2CcFVT84MY1ZuIK2SASgIOEvlP3NNuQOtLkINh7kF3I
+cCwy6nAtEb+HMjYm3vLoOEKC4MimGoykO2/4P2gRRUU9MLB5uCo6rumq/tno0EoM
+VlTxzGsQCDPngX5A5FVJBEyhotr2pRspnisL1fjI+uERACtoeJL677uTl3gr+3hw
+9pKhS3DBdygVmYDFFkIbi9DV8Zo/0vFumlkvKEN6++J0us2STg9vnAAMwrs4wgeu
+hu6A2PEKS1RJfsqlndJk0/2TIHUTYzBc6pfdH4dvFBVAWQs3ywPED7l723UVtqXw
+zfkGNJBYOoxu2GoypNzypXscu+17jiwrVbSb/6EFEQKBgQDjfqsJhrnv3a5l8qqJ
+6y1HW2EgC1KuLBrfuUjiXNGVYJBWHaMYEUz8NXZlP4dy01da1BL90TO9RriAqMcH
+LhkSZUlG3N0+diFYNT7bM6xalUb0vbZ5l7RWnmlJDB5QFv5SEPwHrI8f39s3Wx8o
+PSEdfENOXsdQ9l2+4K7N1z6EzQKBgQC95uAsOMr1EDDwJ66kqGyAGKNviok4i2ys
+N5z5c2alPhEF9R9r2NL16uwFKtx2tO7kPRWt5jUq0KKm/pwMSXXjEOSfbNe/O45Z
+KPQATyLrKA84CS0x8VSILbpHsY+HcMq1m4U6Nj1NwbGgcQhiY/aGtOVLhxqjPpDt
+Fdv9kuXf8QKBgCyr4eAUAYz1ZdqFBTHh6Vk6u160en7TEE/gLUyt10XS2WTfmvgN
+5aUcxmvpRqqoj125iSUoIFXJfk9dVP+28JtpIjN1CUjLn46XngkjI3QCHhXO7vb/
+cB0WLCx44bbuXPA2f5buLoiex4geL4cSQd9tWDYabF8ckZn6uriWzKL9AoGAH5iC
+Q9lPK2b+PXbcv9il9MokpzJNknLgKec23uosceHZwzv9dlwk/XWQv2taMwX3mVHw
+gXaD8hO0fERwgjrWumjdIQli/BZUoNEHh+Wi0a1gmtosAts8TUwOak9IqihCEeVG
+TWEo4f8QJrmnw3cOVWtTmzVnYTHPuyKf75i5VoECgYB+M6CKwSYh7phmcNIEL64x
+mlIz1zVWLbq6Cgw6VJCmXfwHVRZrabJv0a2DvFjWrZXYUoKww5cxj0QECJaQWviW
+zxHfsmgR02HcERpPOZzVOiJeNNS0tMsy4ga5aK31thDeOCq9op4BzSgAoN1s3U9H
+IHNK3fUFPXQMV3IiZMKuHQ==
 -----END PRIVATE KEY-----
 `
 const certificate = `-----BEGIN CERTIFICATE-----
-MIID/TCCAuUCFFvdIY11R5pTnHtdR+ol/oqW0j/MMA0GCSqGSIb3DQEBCwUAMIG6
-MQswCQYDVQQGEwJBUjEMMAoGA1UECAwDQ0JBMRQwEgYDVQQHDAtWaWxsYSBNYXJp
-YTETMBEGA1UECgwKVHV0dG8gQmVuZTETMBEGA1UECwwKVHV0dG8gQmVuZTE8MDoG
-A1UEAwwzYmFja2VuZC10dXR0b2JlbmUtcmFpbHdheS1wcm9kdWN0aW9uLnVwLnJh
-aWx3YXkuYXBwMR8wHQYJKoZIhvcNAQkBFhBkZGFzZHNhQG1haWwuY29tMB4XDTIz
-MDkyNTE1MzgyOVoXDTI0MDkyNDE1MzgyOVowgboxCzAJBgNVBAYTAkFSMQwwCgYD
-VQQIDANDQkExFDASBgNVBAcMC1ZpbGxhIE1hcmlhMRMwEQYDVQQKDApUdXR0byBC
-ZW5lMRMwEQYDVQQLDApUdXR0byBCZW5lMTwwOgYDVQQDDDNiYWNrZW5kLXR1dHRv
-YmVuZS1yYWlsd2F5LXByb2R1Y3Rpb24udXAucmFpbHdheS5hcHAxHzAdBgkqhkiG
-9w0BCQEWEGRkYXNkc2FAbWFpbC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw
-ggEKAoIBAQDLDikUaseHfmlpomdzC4dEWnpCA5HYpMVGqF71gfjrjPDv7pvsoFgP
-ktCLmD9K7MPrcwuovZcLb2YaK/sPdZU81vv+VCudLRRJrHs0K0thaTkK1p9nq5tI
-2Uz57NmsjLEZJAPe/zcuYvTJbPTHwbrOe9rTIptM0UK9JanBrLmsScksPx68bpCQ
-XzlizY6x1Yj1Kw0sIJ5Iz/hgL8GY/BbgRwqVgDcIqZ6HxSuGuBiMMwjWxUmCf6xg
-zYVQoeqCrU9NfWObRXVLaq2caZbqCrfKVhuLRfkI1ifHKN1q5zDqGxYgbBiMBgSm
-33qHOA5nHaNz08Wj3XNfG9MzeZYtrgdNAgMBAAEwDQYJKoZIhvcNAQELBQADggEB
-ADnfkqunjG4ziK7RYy86npzvYXO3zs+AW6swNcGst48zwneRi1QRWh+Zy0ZWk+Pg
-QRzuwjeKoFPhm67mmHyYSFqPYxAlHSxZheEYjed7Ty8/rhqhsVXNWNC5lt25bppk
-2cB2+UoUokLxbkpLyHjvuZfBNM0Sc/n3k0gHkB9TOKCNuq0uAizU4xQuPtovSjMk
-jo9ADh1cudOSEu8SdxNs8AFft3/xW/d1x8fQvpG4e+Wa6MRB95edTc8DMev4EDm0
-zRKD9Zn2yQgVj9jrj+d3l1a0uTlEAfabaYRhOXpwoWpnR/TylVH9P72uEisTEiMI
-IgtHoVEu7xBre3u/F9PvAPk=
------END CERTIFICATE-----`
+MIIEFTCCAv2gAwIBAgIUDZscYH3ICozDYyWh46yuFenW+F0wDQYJKoZIhvcNAQEL
+BQAwgagxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQH
+Ew1TYW4gRnJhbmNpc2NvMRkwFwYDVQQKExBDbG91ZGZsYXJlLCBJbmMuMRswGQYD
+VQQLExJ3d3cuY2xvdWRmbGFyZS5jb20xNDAyBgNVBAMTK01hbmFnZWQgQ0EgODU5
+MzBmNjE2MjExNzBiZTZmNjA3NGZiYmEwYzBlN2QwHhcNMjMxMjA1MjI1NzAwWhcN
+MzMxMjAyMjI1NzAwWjAiMQswCQYDVQQGEwJVUzETMBEGA1UEAxMKQ2xvdWRmbGFy
+ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKjBr0nU7B3NrNgaQNzQ
+N2cNWkWteLfdIjpC5XcCkueyZX5b56FUK9kAMZcu0jj9rxeKVWoLyJ/HFECby5+0
+F9MczdhoYjM2q+s5+TJndPAZmnva49G6zdb8+I4N6Od4T5cBiYMWGo3VuOUa7zzj
+pvYcUQpy/QOlmGuEUZQipYGfuNpknp86fe8s4eXNSF0gTu4zaeHHTOPzIfcH8hgJ
+u9O0w0UGO7+GQS8ciptgc1EpcWBN/YnNw2xLmAVIo+sWLh/g+FPVoHL0pN+BUhjM
+7cR95eRK1cTgL7glWqqB68M0UK8KwBtxCcYTKZ/hZZFeysIn0UpbJTUnDuKuiczq
+l/0CAwEAAaOBuzCBuDATBgNVHSUEDDAKBggrBgEFBQcDAjAMBgNVHRMBAf8EAjAA
+MB0GA1UdDgQWBBR3/YQ2tf1LBzhv4BtGtGGt8WtUPjAfBgNVHSMEGDAWgBS6rsqY
+cig4HrdnWspq+H7lVMr3rDBTBgNVHR8ETDBKMEigRqBEhkJodHRwOi8vY3JsLmNs
+b3VkZmxhcmUuY29tLzYwZGE1MDliLWU2YjUtNDQ2My1hNjI0LTA5ZWZhMzZkNGRh
+Yy5jcmwwDQYJKoZIhvcNAQELBQADggEBAKatlcrFdhiEx0gIaZbJ4/PJBGYJfToO
+hjYkQU+6n2csF5kqYRLuyFT0R4oo8LnWYHP+odrr6egjR5+vVBGvWxT9WoM8pV1z
+w1YppVoZDdMINZk0K/daiv47NszwmMwq+3Qm/Txyt0dUY0gfPPCPMpU9a2Ub8qfX
+Zl09RXCfeoTPHPwTQQmrD2i+QNxLg6FI5bXims+6CxQKaWNWB+z98bv+cycNicMK
+TmECvhVkKi4p5J0RxW/e/nCOxKVTKNyvrtN3aa78PQTH6/tnUaD9DMXWz6jSuUzQ
+LgSlVP7WIUypdkIm80ybzL7KbbpWC/nBhYMEl/NsTDQfJuVTF1v8aGU=
+-----END CERTIFICATE-----
+`
 
 const credentials = { key: privateKey, cert: certificate };
 
@@ -591,13 +592,14 @@ app.post('/api/pedidos/send', async(req, res) => {
                 title: productos[i].nombre,
                 description: productos[i].descripcion,
                 quantity: productos[i].cantidad,
-                unit_price: productos[i].precio
+                unit_price: productos[i].precio,
+                currency_id: 'ARS'
             })
         }
 
         var payment_data = {
-            transaction_amount: 100,
-            token: 'ff8080814c11e237014c1ff593b57b4d',
+            //transaction_amount: 100,
+            //token: 'ff8080814c11e237014c1ff593b57b4d',
             installments: 1,
             items: items,
             description:"Tutto Bene",
@@ -610,16 +612,22 @@ app.post('/api/pedidos/send', async(req, res) => {
                 formaPago: formaPago,
                 productos: JSON.stringify(productos)
             },
-            //auto_return:'approved',
-            /*back_urls: {
-                success: 'http://154.49.246.87:3001/api/recibir-pedido'
-            },*/
+            auto_return:'approved',
+            back_urls: {
+                success: 'https://tuttobene.online:2053/api/recibir-pedido'
+            },
             notification_url: 'https://tuttobene.online:2053/api/recibir-pedido',
             installments: 1,
             payer: {
+                name: nombre,
               type: "customer",
               id: "123456789-jxOV430go9fx2e"
             },
+            payment_methods: {
+                excluded_payment_methods: [],
+                excluded_payment_types: [],
+                installments: 1
+            }
             //notification_url: "http://localhost:3001/api/"
             
           };

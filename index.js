@@ -6,7 +6,7 @@ const fileUpload = require('express-fileupload');
 const path = require('path');
 const { MercadoPagoConfig, Payment, Preference } = require('mercadopago');
 const https = require('https');
-/* const http = require('http') */
+const http = require('http')
 const fs = require('fs');
 const { Server } = require("socket.io");
 
@@ -92,7 +92,7 @@ const credentials = { key: privateKey, cert: certificate };
  //const credentials = {} 
 
 
-const server = https.createServer(credentials,app);
+const server = https.createServer(credentials, app);
 
 const io = new Server(server ,{
     cors: {
@@ -673,9 +673,17 @@ app.post('/api/products/delete-variation', async (req, res) => {
 })
 
 app.post('/api/products/update', async (req, res) => {
-    let { producto } = req.body
-
-    producto = JSON.parse(producto)
+    let { 
+        nombre,
+        precio,
+        categoria,
+        descripcion,
+        formato,
+        disponibilidad,
+        id,
+        imagen,
+        variaciones
+     } = req.body
 
     await mysqlQuery(`
         UPDATE
@@ -691,17 +699,29 @@ app.post('/api/products/update', async (req, res) => {
         WHERE 
             id= ?
         `, [
-            producto.nombre,
-            producto.precio,
-            producto.categoria,
-            producto.descripcion,
-            producto.formato,
-            producto.disponibilidad,
-            producto.id
+            nombre,
+            precio,
+            categoria,
+            descripcion,
+            formato,
+            disponibilidad,
+            id
     ])
-    console.log(producto.variaciones)
 
-        for(let i = 0; i < producto.variaciones.length; i++) {
+    if(req.files) {
+        if(req.files['img']) {
+            req.files['img'].mv(`${__dirname}/imagenes/productos/${imagen}`, (err) => {
+                if(err) return console.log(err)
+            })
+        }
+    }
+
+    variaciones = JSON.parse(variaciones)
+
+    console.log(variaciones)
+
+        for(let i = 0; i < variaciones.length; i++) {
+            if(variaciones[i] == null) continue;
             await mysqlQuery(`
                 UPDATE
                     variaciones
@@ -711,16 +731,16 @@ app.post('/api/products/update', async (req, res) => {
                 WHERE 
                     id= ?
                 `, [
-                    producto.variaciones[i].nombre,
-                    producto.id,
-                    producto.variaciones[i].id,
+                    variaciones[i].nombre,
+                    id,
+                    variaciones[i].id,
             ])
 
-            for(let j = 0; j < producto.variaciones[i].values.length; j++) {
+            for(let j = 0; j < variaciones[i].values.length; j++) {
 
                 let borrado = false
-                if(producto.variaciones[i].values[j].borrado == 1) {
-                    await mysqlQuery(`DELETE FROM variaciones_value WHERE id = ?`, [producto.variaciones[i].values[j].id])
+                if(variaciones[i].values[j].borrado == 1) {
+                    await mysqlQuery(`DELETE FROM variaciones_value WHERE id = ?`, [variaciones[i].values[j].id])
                     borrado = 1
                 }
                 if(!borrado) {
@@ -731,9 +751,9 @@ app.post('/api/products/update', async (req, res) => {
                         valor= ?,
                         variacionid= ?
                     WHERE id= ?`, [
-                        producto.variaciones[i].values[j].nombre,
-                        producto.variaciones[i].id,
-                        producto.variaciones[i].values[j].id,
+                        variaciones[i].values[j].nombre,
+                        variaciones[i].id,
+                        variaciones[i].values[j].id,
                     ])
                 }
             }

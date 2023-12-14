@@ -135,7 +135,56 @@ con.query("SELECT id FROM productos LIMIT 1", function (err, rows, fields) {
 
 app.get('/imagenes/productos/:img', function(req, res){
     res.sendFile( `${__dirname}/imagenes/productos/${req.params.img}` );
-}); 
+});
+
+/* HORARIOS */
+
+app.post('/api/horarios/save', async (req, res) => {
+    const {
+        dias
+    } = req.body;
+    if(!dias) return res.sendStatus(500);
+
+    for(let i = 0; i < dias.length; i++) {
+        await mysqlQuery(`DELETE FROM horarios_rangos WHERE horario_id = ?`, [dias[i].id]);
+        
+        for(let j = 0; j < dias[i].horarios.length; j++) {
+            await mysqlQuery(`INSERT INTO horarios_rangos (horario_id, desde, hasta) VALUES (?, ?, ?)`, [dias[i].id, dias[i].horarios[j].desde, dias[i].horarios[j].hasta]);
+        }
+    }
+
+    
+
+    res.send({code: 1})
+})
+
+app.get('/api/horarios/get', async (req, res) => {
+
+    const [err, result] = await mysqlQuery(`SELECT H.*, HR.id AS idH, HR.desde, HR.hasta FROM horarios H LEFT JOIN horarios_rangos HR ON HR.horario_id = H.id`);
+    if(err) return res.sendStatus(500);
+
+    let data = [];
+
+    for(let i = 0; i < result.length; i++) {
+        if(!data[ result[i].dia ]) {
+            data[ result[i].dia ] = {
+                id: result[i].id,
+                dia: result[i].dia,
+                nombreDia: result[i].nombreDia,
+                horarios: []
+            }
+        }
+        if(result[i].desde) {
+
+            data[ result[i].dia ].horarios.push({
+                id: result[i].idH,
+                desde: result[i].desde,
+                hasta: result[i].hasta
+            })
+        }
+    }
+    res.send({code: 1, data});
+});
 
 /* USERS */
 
